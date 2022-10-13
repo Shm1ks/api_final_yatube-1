@@ -50,6 +50,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+yatube_api/static/
 
 # Translations
 *.mo
@@ -148,3 +149,4 @@ dmypy.json
 # папки со статикой и медиа
 media/
 yatube_api/posts/static/
+yatube_api/static/
