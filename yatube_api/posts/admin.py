@@ -45,10 +45,12 @@ class CommentAdmin(admin.ModelAdmin):
         'pk',
         'text',
         'post',
+        'created',
         'author',
     )
-    search_fields = ('text',)
-    list_filter = ('post',)
+    search_fields = ('text', 'author',)
+    list_filter = ('created',)
+    empty_value_display = '-пусто-'
 
 
 @admin.register(Follow)
@@ -59,3 +61,5 @@ class FollowAdmin(admin.ModelAdmin):
         'user',
         'following',
     )
+    search_fields = ('user', 'following',)
+    empty_value_display = '-пусто-'

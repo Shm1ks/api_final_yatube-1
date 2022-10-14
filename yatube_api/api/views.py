@@ -1,38 +1,52 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, permissions
-from rest_framework.viewsets import (ReadOnlyModelViewSet,
-                                     ModelViewSet)
+from rest_framework import (filters,
+                            mixins,
+                            pagination,
+                            permissions,
+                            viewsets)
 
 from .serializers import (FollowSerializer,
                           PostSerializer,
                           GroupSerializer,
                           CommentSerializer)
 from .permissions import IsAuthor
-from posts.models import Post, Group, Follow
+from posts.models import Post, Group, User
 
 
-class GroupViewSet(ReadOnlyModelViewSet):
-    queryset = Group.objects.all()
-    serializer_class = GroupSerializer
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    pagination_class = None
+class CreateListViewSet(mixins.CreateModelMixin,
+                        mixins.ListModelMixin,
+                        mixins.RetrieveModelMixin,
+                        viewsets.GenericViewSet):
+    pass
 
 
-class PostViewSet(ModelViewSet):
+class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAuthor]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly, IsAuthor
+    ]
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('group', )
+    pagination_class = pagination.LimitOffsetPagination
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
 
-class CommentViewSet(ModelViewSet):
+class GroupViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    pagination_class = None
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title', ]
+
+
+class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAuthor]
+    permission_classes = [IsAuthor]
 
     def get_post(self):
         return get_object_or_404(
@@ -48,7 +62,7 @@ class CommentViewSet(ModelViewSet):
         return self.get_post().comments.all()
 
 
-class FollowViewSet(ModelViewSet):
+class FollowViewSet(CreateListViewSet):
     serializer_class = FollowSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
@@ -57,9 +71,10 @@ class FollowViewSet(ModelViewSet):
     pagination_class = None
 
     def get_queryset(self):
-        user = self.request.user
-        new_queryset = Follow.objects.filter(user=user)
-        return new_queryset
+        return self.request.user.follower.all()
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        following = User.objects.get(
+            username=self.request.data['following']
+        )
+        serializer.save(user=self.request.user, following=following)
