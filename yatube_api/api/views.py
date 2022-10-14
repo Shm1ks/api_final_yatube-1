@@ -11,7 +11,7 @@ from .serializers import (FollowSerializer,
                           GroupSerializer,
                           CommentSerializer)
 from .permissions import IsAuthor
-from posts.models import Post, Group, User
+from posts.models import Group, Post
 
 
 class CreateListViewSet(mixins.CreateModelMixin,
